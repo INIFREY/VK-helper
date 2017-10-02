@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Auth;
+use Vk;
 use App\User;
-//use Goutte\Client;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\Exception\ClientException;
@@ -15,7 +15,14 @@ class VkController extends Controller
     public function index()
     {
         $user = Auth::user();
-        if (!$user)  return redirect('/auth');
+
+        $array = [];
+        $t = Vk::api('groups.search', ['q'=>'Создать сайт', 'count'=>1]);
+        foreach ($t['data']->items as $value) {
+            array_push($array, $value->id);
+        }
+
+       // dd($array);
         return view('vk.index', ['user'=>$user]);
     }
 
@@ -46,9 +53,6 @@ class VkController extends Controller
                 echo "<br><a href='".url('/auth')."'>Попробовать ещё раз</a>";
                 exit();
             }
-
-
-//            $response = $crawler;
 
 
         }

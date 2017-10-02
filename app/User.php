@@ -5,6 +5,7 @@ namespace App;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\DB;
+use Vk;
 
 /**
  * Class User
@@ -38,20 +39,34 @@ class User extends Authenticatable
      * @return bool
      */
     public function hasRole($role){
-        $result = DB::table('roles')->where([
-            ['role', '=', $role],
-            ['user_id', '=', $this->id],
-        ])->count();
-
-        return $result>0 ? true : false;
+        if (is_array($role)){
+            if (array_search($this->role, $role)===false) return false;
+            else return true;
+        }
+        return $this->role==$role ? true : false;
     }
 
-    /**
-     * Вернет роль пользователя
-     * @return mixed
-     */
-    public function getRole(){
-        return DB::table('roles')->where('user_id', $this->id)->value('role');
+    public function getFullName(){
+        try{
+            $api =  Vk::api('users.get')['data'][0];
+            return $api->first_name." ".$api->last_name;
+        }
+        catch (\Exception $e) {
+            return  'No name';
+        }
     }
+
+    public function getAvatar(){
+        try{
+            $api =  Vk::api('users.get', ['fields'=>'photo_50'])['data'][0];
+            return $api->photo_50;
+        }
+        catch (\Exception $e) {
+            return  'No photo';
+        }
+    }
+
+
+
 
 }
