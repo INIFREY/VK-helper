@@ -17,6 +17,7 @@ Route::middleware(['auth', 'role:administrator,user'])->group(function () {
     // Ищу.Киев
     Route::prefix('fk')->group(function () {
         Route::get('lfy', 'FindKievController@lookingForYou'); // Ищу тебя
+        Route::post('lfy/addPost', 'FindKievController@lookingForYouAddPost'); // Ищу тебя
     });
 });
 
