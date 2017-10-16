@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\FkPost;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Vk, Auth, DB, Carbon\Carbon, Validator;
+use Vk, Auth, DB, Carbon\Carbon, Validator, DateTime, Session, Redirect;
 
 class FindKievController extends Controller
 {
@@ -19,34 +19,75 @@ class FindKievController extends Controller
         define('FK_WALL_API',  '-67505812_');
     }
 
-    public function posts()
+    public function posts(Request $request)
     {
         $user = Auth::user();
 
-        $date = '2017-10-13';
+        if ($request->session()->has('hasFkPosts')){
+            dd($request->session()->get('FkPostDate'));
+            $post_date = Carbon::parse($request->session()->get('FkPostDate'))->format('Y-m-d');
+            $post_type = $request->session()->get('FkPostType');
 
-        $db_posts = FkPost::where('post_type', 'lfy')
-           ->where('date', $date)
-           ->orderBy('date', 'desc')->get();
+            $db_posts = FkPost::where('post_type', $post_type)
+                ->where('date', $post_date)
+                ->orderBy('date', 'desc')->get();
 
-        $api_posts_links=""; // Ссылки на записи со стены, для передачи по API
-        foreach ($db_posts as $row) $api_posts_links.= FK_WALL_API.$row->post_id.=',';
+            $api_posts_links=""; // Ссылки на записи со стены, для передачи по API
+            foreach ($db_posts as $row) $api_posts_links.= FK_WALL_API.$row->post_id.=',';
 
-        $posts = Vk::api('wall.getById', ['posts'=>$api_posts_links]);
+            $posts = Vk::api('wall.getById', ['posts'=>$api_posts_links]);
 
-        $messages = array(); // Все сообщения с постов
+            $messages = array(); // Все сообщения с постов
 
-        foreach ($posts['data'] as $one) {
-            $temp = preg_split("/\\n( |)\\n/", $one->text);
-            array_shift($temp); // Удаляем первый элемент
-            $messages = array_merge($messages,  $temp);
+            foreach ($posts['data'] as $one) {
+                $temp = preg_split("/\\n( |)\\n/", $one->text);
+                array_shift($temp); // Удаляем первый элемент
+                $messages = array_merge($messages,  $temp);
+            }
+
+            foreach ($messages as &$message){
+                $message = trim($message);
+            }
         }
 
-        foreach ($messages as &$message){
-            $message = trim($message);
+        return  view('fk.posts', ['user'=>$user, 'lastPostDate'=>$post_date, 'messages'=>$messages]);
+    }
+
+
+    public function showPosts(Request $request)
+    {
+        $user = Auth::user();
+
+        $this->validate($request, [
+            'post_type' => 'required',
+            'date' => 'required',
+        ], [
+            'post_type.required' => 'Выберите тип поста!',
+            'date.required' => 'Выберите дату!',
+        ]);
+
+        if ($user->hasRole(['administrator', 'moderator', 'premium'])){
+            $dateArray = explode(' - ', $request->date);
+            $dateStart = DateTime::createFromFormat('d.m.Y', $dateArray[0]);
+            $dateEnd= @DateTime::createFromFormat('d.m.Y', $dateArray[1]);
+        } else {
+            $dateStart = DateTime::createFromFormat('d.m.Y', $request->date);
+            $dateEnd = $dateStart;
         }
 
-        return view('fk.posts', ['user'=>$user, 'lastPostDate'=>$date, 'messages'=>$messages]);
+        if ($dateStart === false || $dateEnd===false) {
+            return back()->withErrors('Выберете дату с помощью календаря!');
+        }
+
+        $request->session()->put('hasFkPosts', true);
+        $request->session()->put('FkPostType', $request->post_type);
+        $request->session()->put('FkPostDate', $request->date);
+        $request->session()->put('FkPostDateStart', $dateStart);
+        $request->session()->put('FkPostDateEnd', $dateEnd);
+        $request->session()->save();
+
+
+        return Redirect::action('FindKievController@posts');
     }
 
     /**
@@ -95,7 +136,7 @@ class FindKievController extends Controller
         $fk_post->save();
 
         return back()->with('success',
-            'Был добавлен новый пост с "'.$fk_post->getPostTypeText().'" за '.Carbon::parse($fk_post->date)->format('d.m.Y'));
+            'Был добавлен новый пост "'.$fk_post->getPostTypeText().'" за '.Carbon::parse($fk_post->date)->format('d.m.Y'));
 
     }
 }

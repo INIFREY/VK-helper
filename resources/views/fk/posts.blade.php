@@ -7,14 +7,26 @@
 <link href="/assets/fancybox/source/jquery.fancybox.css" rel="stylesheet" />
 <link rel="stylesheet" type="text/css" href="/assets/uniform/css/uniform.default.css" />
 <link rel="stylesheet" type="text/css" href="/assets/bootstrap-datepicker/css/datepicker.css" />
+<link rel="stylesheet" type="text/css" href="/assets/bootstrap-daterangepicker/daterangepicker.css" />
+<link rel="stylesheet" type="text/css" href="/assets/chosen-bootstrap/chosen/chosen.css" />
 @endpush
 
 @push('scripts')
 <script type="text/javascript" src="/assets/chosen-bootstrap/chosen/chosen.jquery.min.js"></script>
 <script type="text/javascript" src="/assets/uniform/jquery.uniform.min.js"></script>
 <script type="text/javascript" src="/assets/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script type="text/javascript" src="/assets/bootstrap-daterangepicker/date.js"></script>
+<script type="text/javascript" src="/assets/bootstrap-daterangepicker/daterangepicker.js"></script>
+<script type="text/javascript" src="/assets/chosen-bootstrap/chosen/chosen.jquery.min.js"></script>
+<script>
+
+</script>
+@endpush
+
+@push('scriptsInit')
 
 @endpush
+
 
 @section('content')
     @if ($errors->any())
@@ -47,6 +59,18 @@
         </div>
     @endif
 
+    @if (!Session::has('hasFkPosts'))
+    <div class="row-fluid">
+        <div class="span12">
+            <div class="alert alert-info fade in">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                Для начала работы выберете тип поста и дату.
+            </div>
+        </div>
+    </div>
+    @endif
+
+
     @if ($user->hasRole(['administrator']))
     <div class="row-fluid">
         <div class="span12">
@@ -78,6 +102,58 @@
         <div class="span12">
             <div class="widget">
                 <div class="widget-title">
+                    <h4><i class="icon-cogs"></i> Выбор постов</h4>
+									<span class="tools">
+									<a href="javascript:;" class="icon-chevron-down"></a>
+									<a href="javascript:;" class="icon-remove"></a>
+									</span>
+                </div>
+                <div class="widget-body">
+                    <form action="{{url('fk/posts')}}" class="form-inline row-fluid" method="post">
+                        <div class="row-fluid">
+                            <div class="control-group span3">
+                                {{ csrf_field() }}
+                                <select class="chosen" data-placeholder="Тип поста" tabindex="1" name="post_type">
+                                    <option value=""></option>
+                                    <option {{Session::get('FkPostType')=='lfy'?'selected':''}} value="lfy">Ищу тебя</option>
+                                    <option {{Session::get('FkPostType')=='kos'?'selected':''}} value="kos">Клуб одиноких сердец</option>
+                                    <option {{Session::get('FkPostType')=='pnd'?'selected':''}} value="pnd">Поиск новых друзей</option>
+                                </select>
+                            </div>
+                            <div class="control-group span6">
+                                <span class="help-inline one-half">Дата: </span>
+                                @if ($user->hasRole(['administrator', 'moderator', 'premium']))
+                                    <div id="posts-date-range" class="btn">
+                                        <i class="icon-calendar"></i>
+                                        &nbsp;<span></span>
+                                        <input type="hidden" name="date" value="{{Session::get('FkPostDate') ?? ''}}">
+                                        <b class="caret"></b>
+                                    </div>
+                                @else
+                                    <input name="date" class=" m-ctrl-medium date-picker"  type="text"
+                                           value="{{Session::get('FkPostDate') ?? Carbon\Carbon::parse('today')->format('d.m.Y') }}">
+                                @endif
+                            </div>
+                        </div>
+                        <div class="row-fluid">
+                            <div class="control-group span11">
+                                <button type="submit" class="btn ">Показать</button>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    @if (Session::has('hasFkPosts'))
+    <div class="row-fluid">
+        <div class="span12">
+            <div class="widget">
+                <div class="widget-title">
                     <h4><i class="icon-globe"></i> @yield('title')</h4>
                            <span class="tools">
                            <a href="javascript:;" class="icon-chevron-down"></a>
@@ -98,4 +174,6 @@
             </div>
         </div>
     </div>
+    @endif
+
 @endsection

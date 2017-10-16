@@ -1845,6 +1845,38 @@ var App = function () {
 
         if (jQuery().daterangepicker ) {
             $('.date-range').daterangepicker();
+
+            var defaultFkPostsDate = $('#posts-date-range input').val();
+            var defaultFkPostsDateArray = (defaultFkPostsDate ? defaultFkPostsDate.split(' - ') : false);
+            $('#posts-date-range').daterangepicker({
+                    ranges: {
+                        'Сегодня': ['today', 'today'],
+                        'Вчера': ['yesterday', 'yesterday'],
+                        'Последние 7 дней': [Date.today().add({
+                            days: -6
+                        }), 'today'],
+                        'Последние 30 дней': [Date.today().add({
+                            days: -29
+                        }), 'today']
+                    },
+                    maxDate: Date.today(),
+                    startDate: toDate(defaultFkPostsDateArray[0]) || Date.today(),
+                    endDate:  toDate(defaultFkPostsDateArray[1]) || Date.today(),
+                    locale: {
+                        firstDay: 1
+                    },
+                    alwaysShowCalendars: true
+                },
+
+                function (start, end) {
+                    $('#posts-date-range span').html(start.toString('dd.MM.yyyy') + ' - ' + end.toString('dd.MM.yyyy'));
+                    $('#posts-date-range input').val(start.toString('dd.MM.yyyy') + ' - ' + end.toString('dd.MM.yyyy'));
+                });
+
+
+            $('#posts-date-range span').html(defaultFkPostsDate || Date.today().toString('dd.MM.yyyy') + ' - ' + Date.today().toString('dd.MM.yyyy'));
+            $('#posts-date-range input').val(defaultFkPostsDate || Date.today().toString('dd.MM.yyyy') + ' - ' + Date.today().toString('dd.MM.yyyy'));
+
         }
 
         if (jQuery().datepicker || jQuery().timepicker) {
@@ -1859,6 +1891,12 @@ var App = function () {
                 showSeconds: true,
                 showMeridian: false
             });
+        }
+
+        function toDate(dateStr) {
+            if(!dateStr) return false;
+            var numbers = dateStr.split('.');
+            return new Date(numbers[2], numbers[1]-1, numbers[0]);
         }
 
 

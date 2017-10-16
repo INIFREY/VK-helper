@@ -21,19 +21,20 @@
         this.ranges = {};
         this.opens = 'right';
         this.cb = function () { };
-        this.format = 'MM/dd/yyyy';
+        this.format = 'dd.MM.yyyy';
         this.separator = ' - ';
         this.showWeekNumbers = false;
         this.buttonClasses = ['btn-success'];
+        this.alwaysShowCalendars = false;
         this.locale = {
-            applyLabel: 'Apply',
-            fromLabel: 'From',
-            toLabel: 'To',
+            applyLabel: 'Выбрать',
+            fromLabel: 'С',
+            toLabel: 'По',
             weekLabel: 'W',
-            customRangeLabel: 'Custom Range',
+            customRangeLabel: 'Другая дата',
             daysOfWeek: Date.CultureInfo.shortestDayNames,
             monthNames: Date.CultureInfo.monthNames,
-            firstDay: 0
+            firstDay: 1
         };
 
         localeObject = this.locale;
@@ -197,6 +198,10 @@
                 this.buttonClasses = options.buttonClasses;
             }
 
+            if (typeof options.alwaysShowCalendars === 'boolean') {
+                this.alwaysShowCalendars = options.alwaysShowCalendars;
+            }
+
         }
 
         //apply CSS classes to buttons
@@ -218,6 +223,10 @@
 
         if (typeof cb == 'function')
             this.cb = cb;
+
+        if ((typeof options.ranges === 'undefined' && !this.singleDatePicker) || this.alwaysShowCalendars) {
+            this.container.addClass('show-calendar');
+        }
 
         this.container.addClass('opens' + this.opens);
 

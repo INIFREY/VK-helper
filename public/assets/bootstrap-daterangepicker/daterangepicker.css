@@ -138,6 +138,9 @@
   content: '';
 }
 
+.daterangepicker.show-calendar .calendar {
+  display: block !important; }
+
 .daterangepicker table {
   width: 100%;
   margin: 0;
