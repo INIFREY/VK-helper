@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\FkPost;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Vk;
-use Auth;
-use DB;
-use Carbon\Carbon;
+use Vk, Auth, DB, Carbon\Carbon, Validator;
 
 class FindKievController extends Controller
 {
@@ -21,16 +19,15 @@ class FindKievController extends Controller
         define('FK_WALL_API',  '-67505812_');
     }
 
-    public function lookingForYou()
+    public function posts()
     {
         $user = Auth::user();
 
-        $date = '2017-10-02';
+        $date = '2017-10-13';
 
-        $db_posts = DB::table('fk_posts')
-            ->select(DB::raw("post_id"))
-            ->where('post_type', 'lfy')->where('date', $date)
-            ->orderBy('date', 'desc')->get();
+        $db_posts = FkPost::where('post_type', 'lfy')
+           ->where('date', $date)
+           ->orderBy('date', 'desc')->get();
 
         $api_posts_links=""; // Ссылки на записи со стены, для передачи по API
         foreach ($db_posts as $row) $api_posts_links.= FK_WALL_API.$row->post_id.=',';
@@ -49,18 +46,18 @@ class FindKievController extends Controller
             $message = trim($message);
         }
 
-        return view('fk.lfy', ['user'=>$user, 'lastPostDate'=>$date, 'messages'=>$messages]);
+        return view('fk.posts', ['user'=>$user, 'lastPostDate'=>$date, 'messages'=>$messages]);
     }
 
     /**
+     * Добавление нового поста в базу
      * @param Request $request
      * @return $this|\Illuminate\Http\RedirectResponse
      */
-    public function lookingForYouAddPost(Request $request){
+    public function addPost(Request $request){
         if(!Auth::user()->hasRole('administrator')) return back()->withErrors('Доступ запрещен!');
 
         $this->validate($request, [
-            'date' => 'required|date',
             'link' => 'required|url',
         ], [
             'link.*' => 'Укажите ссылку на пост!',
@@ -70,19 +67,35 @@ class FindKievController extends Controller
             return back()->withErrors('Ссылка должна быть на пост с Ищу.Киев!');
         }
 
-        // TODO:: Проверка, нужный ли пост тут (Ищу тебя)
+        $post_id = explode(FK_WALL, $request->link);
+        $api_response = Vk::api('wall.getById', ['posts'=>FK_WALL_API.$post_id[1]]);
+        if ($api_response['status']!='success' || !$api_response['data']) return back()->withErrors('Произошла ошибка при попытке получить запись!');
 
-        $linkArr = explode(FK_WALL, $request->link);
+        $api_post = $api_response['data'][0];
 
-        DB::table('fk_posts')->insert(
+        $fk_post = new FkPost;
+        $fk_post->date = Carbon::createFromTimestamp($api_post->date)->format('Y-m-d');
+        $fk_post->post_id = $api_post->id;
+
+        $post_type = $fk_post->getPostType($api_post->text);
+        if($post_type) $fk_post->post_type = $post_type;
+        else return back()->withErrors('Посты данного типа добавлять нельзя!');
+
+        Validator::validate(
             [
-                'post_id' => $linkArr[1],
-                'date' => Carbon::parse($request->date)->format('Y-m-d'),
-                'post_type'=>'lfy'
-            ]
+                'post_type' => $post_type,
+                'post_id'=>$fk_post->post_id],
+            [
+                'post_type' => 'required',
+                'post_id' => 'required|unique:fk_posts'
+            ],
+            ['post_id.unique' => 'Эта запись уже добавлена ранее!']
         );
 
-        return back();
+        $fk_post->save();
+
+        return back()->with('success',
+            'Был добавлен новый пост с "'.$fk_post->getPostTypeText().'" за '.Carbon::parse($fk_post->date)->format('d.m.Y'));
 
     }
 }

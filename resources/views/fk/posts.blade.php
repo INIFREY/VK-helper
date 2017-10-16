@@ -1,6 +1,6 @@
 @extends('layouts.vk')
 
-@section('title', 'Ищу тебя')
+@section('title', 'Список постов')
 @section('breadcrumb', 'Ищу.Киев')
 
 @push('styles')
@@ -32,6 +32,21 @@
     </div>
     @endif
 
+    @if (Session::has('success'))
+        <div class="row-fluid">
+            <div class="span12">
+                <div class="alert alert-block alert-success fade in">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <h4 class="alert-heading">Успешно!</h4>
+                    <br>
+                    <p>
+                        {{ Session::get('success') }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if ($user->hasRole(['administrator']))
     <div class="row-fluid">
         <div class="span12">
@@ -44,12 +59,10 @@
 									</span>
                 </div>
                 <div class="widget-body">
-                    <form action="{{url('fk/lfy/addPost')}}" class="form-inline" method="post">
+                    <form action="{{url('fk/posts/add')}}" class="form-inline" method="post">
                         <div class="control-group">
                             {{ csrf_field() }}
-                            <input name="link" type="text" class="span4 one-half" placeholder="Ссылка">
-                            <span class="help-inline ">Дата: </span>
-                            <input name="date" class=" m-ctrl-medium date-picker span2 one-half"  type="text" value="{{Carbon\Carbon::parse('today')->format('d.m.Y') }}">
+                            <input name="link" type="text" class="span5 one-half" placeholder="Ссылка">
                             <button type="submit" class="btn ">Добавить</button>
                         </div>
                     </form>
@@ -71,7 +84,7 @@
                            </span>
                 </div>
                 <div class="widget-body">
-                    <p>Дата последнего поста: {{Carbon\Carbon::parse($lastPostDate)->format('d.m.Y') }}</p>
+                    <p>Показаны посты за: {{Carbon\Carbon::parse($lastPostDate)->format('d.m.Y') }}</p>
                     @foreach($messages as $msg)
                     <div class="well">
                      {{$msg}}

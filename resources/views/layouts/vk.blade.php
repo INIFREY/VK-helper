@@ -240,7 +240,7 @@
                     <span class="arrow"></span>
                 </a>
                 <ul class="sub">
-                    <li class="{{Request::is('fk/lfy') ? 'active' : '' }}" ><a href="{{url('/fk/lfy')}}">Ищу тебя</a></li>
+                    <li class="{{Request::is('fk/posts') ? 'active' : '' }}" ><a href="{{url('/fk/posts')}}">Список постов</a></li>
                 </ul>
             </li>
             @if ($user->hasRole(['administrator']))
